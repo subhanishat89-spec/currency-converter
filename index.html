@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Currency Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --soft: #eef2ff;
+    --error-bg: #fef2f2;
+    --error-text: #b91c1c;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1120;
+      --card: #111a2e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #24304a;
+      --primary: #818cf8;
+      --primary-hover: #a5b4fc;
+      --soft: #1b2442;
+      --error-bg: #3b1417;
+      --error-text: #fca5a5;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 0.875rem; margin: 4px 0 22px; }
+  label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .field { margin-bottom: 16px; }
+  input, select {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 14px;
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+  }
+  input { font-size: 1.25rem; font-weight: 600; }
+  input:hover, select:hover { border-color: var(--primary); }
+  input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--soft); }
+  .row { display: flex; align-items: flex-end; gap: 10px; }
+  .row .field { flex: 1; margin-bottom: 0; }
+  .swap {
+    flex: none;
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--soft);
+    color: var(--primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform .3s, background .2s;
+  }
+  .swap:hover { background: var(--primary); color: #fff; transform: rotate(180deg); }
+  .result {
+    margin-top: 22px;
+    padding: 20px;
+    background: var(--soft);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .result .from-text { color: var(--muted); font-size: 0.9rem; }
+  .result .amount { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.02em;
+                    color: var(--primary); margin: 6px 0; word-break: break-word; }
+  .result .rate { color: var(--muted); font-size: 0.85rem; }
+  .loading .amount, .loading .rate {
+    color: transparent !important;
+    background: linear-gradient(90deg, var(--border) 25%, var(--card) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 8px;
+    user-select: none;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .error {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--error-bg);
+    color: var(--error-text);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .error.show { display: flex; }
+  .error button {
+    background: none; border: 1.5px solid currentColor; color: inherit;
+    border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .footer { margin-top: 16px; text-align: center; font-size: 0.75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Currency Converter</h1>
+    <p class="subtitle">Live exchange rates, updated in real time.</p>
+
+    <div class="field">
+      <label for="amount">Amount</label>
+      <input id="amount" type="number" inputmode="decimal" min="0" step="any" value="100" placeholder="0.00">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="from">From</label>
+        <select id="from"></select>
+      </div>
+      <button class="swap" id="swap" type="button" aria-label="Swap currencies" title="Swap">⇄</button>
+      <div class="field">
+        <label for="to">To</label>
+        <select id="to"></select>
+      </div>
+    </div>
+
+    <section class="result" id="result" aria-live="polite">
+      <div class="from-text" id="fromText">&nbsp;</div>
+      <div class="amount" id="converted">0.00</div>
+      <div class="rate" id="rate">&nbsp;</div>
+    </section>
+
+    <div class="error" id="error" role="alert">
+      <span id="errorMsg">Something went wrong.</span>
+      <button id="retry" type="button">Retry</button>
+    </div>
+
+    <p class="footer" id="updated"></p>
+  </main>
+
+<script>
+  const CURRENCIES = {
+    USD: 'US Dollar', EUR: 'Euro', GBP: 'British Pound', CAD: 'Canadian Dollar',
+    AUD: 'Australian Dollar', JPY: 'Japanese Yen', INR: 'Indian Rupee', BDT: 'Bangladeshi Taka',
+    CNY: 'Chinese Yuan', CHF: 'Swiss Franc', SGD: 'Singapore Dollar', AED: 'UAE Dirham',
+    SAR: 'Saudi Riyal', MYR: 'Malaysian Ringgit'
+  };
+  const CACHE_MS = 10 * 60 * 1000;
+  const cache = {};
+
+  const $ = id => document.getElementById(id);
+  const amountEl = $('amount'), fromEl = $('from'), toEl = $('to');
+
+  // Populate dropdowns
+  Object.entries(CURRENCIES).forEach(([code, name]) => {
+    fromEl.add(new Option(`${code} – ${name}`, code));
+    toEl.add(new Option(`${code} – ${name}`, code));
+  });
+  fromEl.value = 'USD';
+  toEl.value = 'BDT';
+
+  // Fetch rates with fallback API
+  async function fetchRates(base) {
+    const hit = cache[base];
+    if (hit && Date.now() - hit.ts < CACHE_MS) return hit;
+
+    let rates, updated;
+    try {
+      const r = await fetch(`https://open.er-api.com/v6/latest/${base}`);
+      if (!r.ok) throw new Error('Primary API error');
+      const d = await r.json();
+      if (d.result !== 'success') throw new Error('Primary API failed');
+      rates = d.rates;
+      updated = new Date(d.time_last_update_utc);
+    } catch (e) {
+      const r = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base.toLowerCase()}.json`);
+      if (!r.ok) throw new Error('Both rate services are unavailable.');
+      const d = await r.json();
+      rates = Object.fromEntries(
+        Object.entries(d[base.toLowerCase()]).map(([k, v]) => [k.toUpperCase(), v])
+      );
+      updated = new Date(d.date);
+    }
+    return (cache[base] = { rates, updated, ts: Date.now() });
+  }
+
+  const fmt = (n, cur) => new Intl.NumberFormat(undefined, {
+    style: 'currency', currency: cur, maximumFractionDigits: 2
+  }).format(n);
+
+  function setLoading(on) { $('result').classList.toggle('loading', on); }
+  function showError(msg) { $('errorMsg').textContent = msg; $('error').classList.add('show'); }
+  function hideError() { $('error').classList.remove('show'); }
+
+  let requestId = 0;
+  async function convert() {
+    const id = ++requestId;
+    const amount = parseFloat(amountEl.value);
+    const from = fromEl.value, to = toEl.value;
+
+    if (isNaN(amount) || amount < 0) {
+      $('converted').textContent = '—';
+      $('fromText').innerHTML = '&nbsp;';
+      $('rate').innerHTML = 'Enter a valid amount';
+      return;
+    }
+
+    hideError();
+    setLoading(true);
+    try {
+      const { rates, updated } = await fetchRates(from);
+      if (id !== requestId) return; // ignore stale responses
+      const rate = rates[to];
+      if (!rate) throw new Error(`No rate available for ${to}.`);
+
+      $('fromText').textContent = `${fmt(amount, from)} =`;
+      $('converted').textContent = fmt(amount * rate, to);
+      $('rate').textContent = `1 ${from} = ${rate.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${to}`;
+      $('updated').textContent = `Rates last updated: ${updated.toLocaleString()}`;
+    } catch (err) {
+      if (id !== requestId) return;
+      $('converted').textContent = '—';
+      $('rate').innerHTML = '&nbsp;';
+      showError(err.message || 'Could not load exchange rates. Check your connection.');
+    } finally {
+      if (id === requestId) setLoading(false);
+    }
+  }
+
+  let timer;
+  amountEl.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(convert, 200); });
+  fromEl.addEventListener('change', convert);
+  toEl.addEventListener('change', convert);
+  $('retry').addEventListener('click', () => { delete cache[fromEl.value]; convert(); });
+  $('swap').addEventListener('click', () => {
+    [fromEl.value, toEl.value] = [toEl.value, fromEl.value];
+    convert();
+  });
+
+  convert();
+</script>
+</body>
+</html>
